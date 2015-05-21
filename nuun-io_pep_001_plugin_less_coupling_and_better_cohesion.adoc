@@ -1,0 +1,109 @@
+|=======================
+|PEP       |  001
+|Title     |  Plugins : Less coupling , Better cohesion
+|Author    |  Epo Jemba  epo.jemba@kametic.com
+|Status    |  draft
+|=======================
+
+
+= Abstract
+
+Enhance the Plugin A.P.I. to
+
+- Help decouple plugins allthogether,
+- Offer a clean place to organize code between multi plugin use cases.
+
+= Motivation
+
+We know plugin is the place where all the inversion of control, dynamic binding occur.
+But we often have to make hard dependencies and code stack code inside them.
+We needed to find a way to further organize developer stack code. So:
+
+- The first motivation is to reduce coupling between plugins.
+- The second motivation is to help stack designer to decouple their stack code from nuun A.P.I.
+
+= Specification
+
+== Decoupling with interfaces
+
+With Nuun.IO a plugin can declare required plugins and dependent plugins to the kernel.
+By doing so, we ask a direct reference of the plugins thus introducing a coupling.
+
+The idea is to ask kernel for interfaces rather that Plugins.
+Required and dependent plugins will implement them explicitely or implicitely.
+We will then reduce coupling.
+
+=== Explicit Interfaces
+
+Given an interface, a plugin trait:
+
+[source,java]
+----
+public interface ConfigurationHolder {
+
+    public String get (String key) ;
+
+    public void put(String key , String value) ;
+}
+----
+
+And Given a plugin +RequiredPlugin+ implementing this interface
+[source,java]
+----
+public class RequiredPlugin extends AbstractPlugin implements ConfigurationHolder {
+
+    // - - - - - 8< - - - - -
+
+    // trait implementation
+    public String get (String key) {
+       return goodValue;
+    }
+
+    public void put (String key , String value) {
+       // trait implementation
+    }
+
+    // - - - - - 8< - - - - -
+
+}
+----
+When a plugin +MyPlugin+ will require this dependency, it will ask for +ConfigurationHolder+ rather than +RequiredPlugin+.
+
+Instead of requesting via 
+
+[source,java]
+----
+    Collection<Class<? extends Plugin>> Plugin.requiredPlugins();
+    // or
+    Collection<Class<? extends Plugin>> Plugin.dependentPlugins();
+----
++MyPlugin+ will request it via
+
+[source,java]
+----
+public class MyPlugin extends AbstratPlugin {
+
+     // . . .
+
+    public Collection<Class<? >> requiredTraits() {
+       return  collectionOf(ConfigurationHolder.class);
+    }
+    
+    
+    public Collection<Class<? >> dependentTraits() {
+       return  collectionOf(ConfigurationHolder.class);
+    }
+}
+----
+And instead of getting result via +InitContext.pluginsRequired()+ or +InitContext.pluginsDependent()+ 
+[source,java]
+----
+    @Override
+    public InitState init(InitContext initContext) {
+            
+             
+    }
+----
+
+
+=== Implicit Interfaces
