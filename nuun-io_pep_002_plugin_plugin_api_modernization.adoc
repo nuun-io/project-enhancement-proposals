@@ -1,0 +1,39 @@
+|=======================
+|PEP       |  002
+|Title     |  Kernel Request API modernization
+|Author    |  Epo Jemba  epo.jemba@kametic.com
+|Status    |  draft
+|=======================
+
+
+= Abstract
+
+Modernize the Kernel Request API in order to
+
+- Ease plugin developers life 
+- Offer an annotation based API that will augment the current classic one
+= Motivation
+
+The current API can be cumbersome to use in the current version.
+The API is not really fluent.
+
+[source,java]
+----
+
+    @Override
+    public Collection<Class<? extends Plugin>> requiredPlugins() {
+        Collection<Class<? extends Plugin>> plugins = new ArrayList<Class<? extends Plugin>>();
+        plugins.add(ApplicationPlugin.class);
+        return plugins;
+    }
+
+----
+
+We know plugin is the place where all the inversion of control, dynamic binding occur.
+But we often have to make hard dependencies and code stack code inside them.
+We needed to find a way to further organize developer stack code. So:
+
+- The first motivation is to reduce coupling between plugins.
+- The second motivation is to help stack designer to decouple their stack code from nuun A.P.I.
+
+= Specification
