@@ -114,10 +114,10 @@ Instead of getting result via +InitContext.requiredPlugins()+ or +InitContext.de
        logging.verbosity(LoggingTrait.INFO);
 
        // get all required plugins
-       Collection<?> requiredTraits = initContext.requiredTraits();
+       Map<Class<?> , ?> requiredTraits = initContext.requiredTraits();
        
        // get all dependent plugins
-       Collection<?> dependentTraits = initContext.dependendTraits();
+       Map<Class<?> , ?> dependentTraits = initContext.dependendTraits();
     }
 ----
 
@@ -172,15 +172,25 @@ public interface LegacyTrait  {
 }
 ----
 The kernel will automatically proxy +LegacyPlugin+ to the +Legacy+.
-You'll have to use the same method to require or make dependent the legacy trait.
+You'll have to use the same method to require or make dependent the legacy trait than above.
+You'll have to use InitContext to get your trait, the same way.
+
 [source,java]
 ----
 public class MyPlugin extends AbstratPlugin {
 
-     // . . .
-    
+     // request the trait
     public Collection<Class<? >> dependentTraits() {
        return  collectionOf(LegacyTrait.class);
+    }
+    
+    // use the trait
+    public InitState init(InitContext initContext) {
+        // get required  trait by class
+        LegacyTrait legacy = initContext.requiredTrait(LegacyTrait.class);
+        // 'legacy' is a proxy to LegacyPlugin
+        String myValue = legacy.legacyMethod();
+        
     }
 }
 ----
