@@ -15,31 +15,36 @@ Enhance the Plugin A.P.I. to
 
 = Motivation
 
-We know plugin is the place where all the inversion of control, dynamic binding occur.
-But we often have to make hard dependencies and code stack code inside them.
-We needed to find a way to further organize developer stack code. So:
+Plugin is the place where all the inversion of control, dynamic bindings and start time behaviour occur.
+We often have to make hard dependencies and embed stack code inside them.
+We needed to find a way to further organize developer stack code:
 
 - The first motivation is to reduce coupling between plugins.
-- The second motivation is to help stack designer to decouple their stack code from nuun A.P.I.
+- The second motivation is to help stack designers to decouple their stack code from Nuun.IO A.P.I.
 
 = Specification
 
 == Decoupling with interfaces
 
-With Nuun.IO a plugin can declare required plugins and dependent plugins to the kernel.
+With Nuun.IO a plugin can request required plugins and dependent plugins to the kernel.
 By doing so, we ask a direct reference of the plugins thus introducing a coupling.
 
-The idea is to ask kernel for interfaces rather that Plugins.
-Required and dependent plugins will implement them explicitely or implicitely.
-We will then reduce coupling.
+Basic idea is to:
+
+1. Create interface that sum up contract between your plugins,
+2. Make dependent and required plugins implements those interfaces,
+2. Make your current plugin request for those interfaces rather than plugin directly.
+
+Required and dependent plugins will implement the interfaces them explicitely or implicitely.
+We cover this just after.
 
 === Explicit Interfaces
 
-Given an interface, a plugin trait:
+We create the interface +ConfigurationTrait+, a plugin trait, the contract:
 
 [source,java]
 ----
-public interface ConfigurationHolder {
+public interface ConfigurationTrait {
 
     public String get (String key) ;
 
@@ -47,10 +52,10 @@ public interface ConfigurationHolder {
 }
 ----
 
-And Given a plugin +RequiredPlugin+ implementing this interface
+We create a plugin +RequiredPlugin+ implementing this interface
 [source,java]
 ----
-public class RequiredPlugin extends AbstractPlugin implements ConfigurationHolder {
+public class RequiredPlugin extends AbstractPlugin implements ConfigurationTrait {
 
     // - - - - - 8< - - - - -
 
@@ -67,9 +72,9 @@ public class RequiredPlugin extends AbstractPlugin implements ConfigurationHolde
 
 }
 ----
-When a plugin +MyPlugin+ will require this dependency, it will ask for +ConfigurationHolder+ rather than +RequiredPlugin+.
+When the plugin +MyPlugin+ will require this dependency, it will ask for +ConfigurationTrait+ rather than +RequiredPlugin+.
 
-Instead of requesting via 
+The method for the request will not be:
 
 [source,java]
 ----
@@ -77,7 +82,7 @@ Instead of requesting via
     // or
     Collection<Class<? extends Plugin>> Plugin.dependentPlugins();
 ----
-+MyPlugin+ will request it via
++MyPlugin+ will now request it via
 
 [source,java]
 ----
@@ -86,24 +91,100 @@ public class MyPlugin extends AbstratPlugin {
      // . . .
 
     public Collection<Class<? >> requiredTraits() {
-       return  collectionOf(ConfigurationHolder.class);
+       return  collectionOf(ConfigurationTrait.class);
     }
     
     
     public Collection<Class<? >> dependentTraits() {
-       return  collectionOf(ConfigurationHolder.class);
+       return  collectionOf(ConfigurationTrait.class);
     }
 }
 ----
-And instead of getting result via +InitContext.pluginsRequired()+ or +InitContext.pluginsDependent()+ 
+Instead of getting result via +InitContext.requiredPlugins()+ or +InitContext.dependentPlugins()+ 
 [source,java]
 ----
     @Override
     public InitState init(InitContext initContext) {
-            
-             
+        // get required  trait by class
+        ConfigurationTrait configuration = initContext.requiredTrait(ConfigurationTrait.class);
+        String myValue = configuration.get("mykey");
+        
+        // get dependent trait by class
+       LoggingTrait  loogging = initContext.dependentTrait(LoggingTrait.class);
+       logging.verbosity(LoggingTrait.INFO);
+
+       // get all required plugins
+       Collection<?> requiredTraits = initContext.requiredTraits();
+       
+       // get all dependent plugins
+       Collection<?> dependentTraits = initContext.dependendTraits();
     }
 ----
 
 
 === Implicit Interfaces
+In some cases, you'll have to require or make dependent an already existing plugins.
+You'll have to introduce a coupling on this plugin, as long as this plugin has no declared some trait.
+
+This is sad ! :(
+     
+==== Go style interfaces
+
+In golang to satisfy an interface, there is no need to implement it.
+You just have to satisfy the contract of the interface.
+
+Implicit interface will allow you to use an already defined plugin by creating a trait for it.
+Nuun Kernel will recognize the plugin from the trait and will proxy it for you.
+
+==== Example
+
+
+Given an already existing plugin +LegacyPlugin+
+
+[source,java]
+----
+public class LegacyPlugin extends AbstratPlugin {
+
+     // . . .
+
+    public String legacyMethod() {
+       return  something;
+    }
+    
+    public void legacyMethod(Object input) {
+       // implementation
+    }
+    
+}
+----
+
+Rather than introducting a coupling on +LegacyPlugin+ class, just create the interface +LegacyTrait+.
+The methods of the interface have to match the legacy plugin methods you want to work with.
+
+[source,java]
+----
+public interface LegacyTrait  {
+
+    public String legacyMethod() ;
+    
+    public void legacyMethod(Object input) ;
+    
+}
+----
+The kernel will automatically proxy +LegacyPlugin+ to the +Legacy+.
+You'll have to use the same method to require or make dependent the legacy trait.
+[source,java]
+----
+public class MyPlugin extends AbstratPlugin {
+
+     // . . .
+    
+    public Collection<Class<? >> dependentTraits() {
+       return  collectionOf(LegacyTrait.class);
+    }
+}
+----
+
+==== Conclusion
+
+This way no coupling between your module and a legacy plugin.
