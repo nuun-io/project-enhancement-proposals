@@ -8,7 +8,7 @@
 
 = Abstract
 
-Enhance the Plugin A.P.I. to
+Enhance the Plugin A.P.I. to 
 
 - Help decouple plugins allthogether,
 - Offer a clean place to organize code between multi plugin use cases.
@@ -16,11 +16,11 @@ Enhance the Plugin A.P.I. to
 = Motivation
 
 Plugin is the place where all the inversion of control, dynamic bindings and start time behaviour occur.
-We often have to make hard dependencies and embed stack code inside them.
-We needed to find a way to further organize developer stack code:
+We often have to make hard dependencies and embed stack logic inside them.
+We need to find a way to further organize developer stack logic:
 
 - The first motivation is to reduce coupling between plugins.
-- The second motivation is to help stack designers to decouple their stack code from Nuun.IO A.P.I.
+- The second motivation is to help stack designers to decouple their stack logic from Nuun.IO A.P.I.
 
 = Specification
 
@@ -198,3 +198,108 @@ public class MyPlugin extends AbstratPlugin {
 ==== Conclusion
 
 This way no coupling between your module and a legacy plugin.
+
+== Increase coherence
+
+Plugins role is to focus on the initialization of the application using the Kernel/Plugin IOC Protocol (c).
+However, some logic could not be located inside any nuun plugin because
+
+- it is sufficiently generic and can be reused, 
+- it can be usefull across several plugins.
+
+The main role of this feature is to help nuun users to 
+
+- better organize their core logic and 
+- give them a way to decouple from Nuun API.
+
+=== A Simple Scoped POJO 
+
+The logic holder is a simple POJO and it contains the core logic. 
+As simple as this. A good practice is not include any dependency to Nuun API.
+
+
+Requesting the POJO is quite similar to request a traits or plugins.
+The plugins will ask the POJO encapsulating the core logic via its class.
+
+By default the kernel will provide a singleton of the POJO to all plugins. 
+Scope version of this could be added later if needed. 
+For now any scope could be handled inside the POJO itself.
+
+=== Example
+
+Given a POJO containing the core logic of your feature.
+
+[source,java]
+----
+public class ConfigurationLogic  {
+
+    // the configuration of all your application
+    Configuration configuration;
+    
+    // configuration fragments
+    List<Map<String,Object>> configurationFragments;
+    
+    public ConfigurationLogic () {
+        // it is a good idea to delegate the creation
+        // to your core logic objects
+        configuration = new Configuration();
+        configurationFragment = new List<> ();
+    }
+
+     // 
+    public void compute() {
+       // . . compute configuration with fragment .
+    }
+    
+    public Configuration configuration() {
+       // simply returns the configuration
+       return configuration;
+    }
+    
+    // 
+    public void add(Map<String,Object> confFragment) {
+        // add a configuration fragment
+        ...
+    }
+}
+----
+This is a good practice to delegate the creation of core objects like +configuration+.
++ConfigurationLogic+ is then completely testable.
+
+The plugins will be able to request the Core Logic object and use it this way :
+
+[source,java]
+----
+public class MyPlugin extends AbstratPlugin {
+
+     // request the core logic
+    public Collection<Class<? >> coreLogic() {
+       return  collectionOf(ConfigurationLogic.class);
+    }
+    
+    // use the trait
+    public InitState init(InitContext initContext) {
+        // get the core logic component which is a singleton
+        ConfigurationLogic logic = initContext.coreLogic(ConfigurationLogic.class);
+        
+        // another plugin could
+        logic.add(mapOfConfigurationFromProps)
+        
+        // another plugin could
+        logic.add(mapOfConfigurationFromYaml)
+        
+        // another plugin could
+        logic.add(mapOfConfigurationFromToml)
+        
+        // construct the configuration
+        logic.compute();
+        
+        // 'legacy' is a proxy to LegacyPlugin
+        configuration = logic.configuration();
+        
+    }
+}
+----
+
+Another subsequent good practice is that the plugin does not holds any core logic pojo.
+This is not a strong requirement. 
