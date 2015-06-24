@@ -1,0 +1,22 @@
+|=======================
+|PEP       |  003
+|Title     |  Fluent plugins
+|Author    |  Adrien LAUER and Pierre THIROUIN
+|Status    |  draft
+|=======================
+
+
+= Abstract
+
+This PEP is about a new fluent API for plugins which could complement the traditional API (modernized with PEP 002 or not).
+This new API make uses of one-method interfaces to enable lambda coding in the plugins themselves. The API is still
+backwards compatible with Java 6 & 7.
+
+The result is a drastic reduction of boilerplate code and a simplification of the plugin interface (named FluentPlugin in
+this pep). The use of "closures" and the ability to install modules directly from the init method enable to avoid keeping
+state in the plugin itself.  
+
+= Specification
+
+This PEP is specified as a Proof-Of-Concept under the [pep_003_poc](pep_003_poc) directory. This should be compiled with
+Java 8, as the example plugins use lambda and streams (but plugins can be written without).
