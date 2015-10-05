@@ -46,9 +46,9 @@ We create the interface +ConfigurationTrait+, a plugin trait, the contract:
 ----
 public interface ConfigurationTrait {
 
-    public String get (String key) ;
+    public String get(String key) ;
 
-    public void put(String key , String value) ;
+    public void put(String key, String value) ;
 }
 ----
 
@@ -60,11 +60,11 @@ public class RequiredPlugin extends AbstractPlugin implements ConfigurationTrait
     // - - - - - 8< - - - - -
 
     // trait implementation
-    public String get (String key) {
+    public String get(String key) {
        return goodValue;
     }
 
-    public void put (String key , String value) {
+    public void put(String key, String value) {
        // trait implementation
     }
 
@@ -78,9 +78,9 @@ The method for the request will not be:
 
 [source,java]
 ----
-    Collection<Class<? extends Plugin>> Plugin.requiredPlugins();
-    // or
-    Collection<Class<? extends Plugin>> Plugin.dependentPlugins();
+Collection<Class<? extends Plugin>> Plugin.before();
+// or
+Collection<Class<? extends Plugin>> Plugin.after();
 ----
 +MyPlugin+ will now request it via
 
@@ -90,12 +90,12 @@ public class MyPlugin extends AbstratPlugin {
 
      // . . .
 
-    public Collection<Class<? >> requiredTraits() {
+    public Collection<Class<? >> before() {
        return  collectionOf(ConfigurationTrait.class);
     }
     
     
-    public Collection<Class<? >> dependentTraits() {
+    public Collection<Class<? >> after() {
        return  collectionOf(ConfigurationTrait.class);
     }
 }
@@ -103,22 +103,15 @@ public class MyPlugin extends AbstratPlugin {
 Instead of getting result via +InitContext.requiredPlugins()+ or +InitContext.dependentPlugins()+ 
 [source,java]
 ----
-    @Override
-    public InitState init(InitContext initContext) {
-        // get required  trait by class
-        ConfigurationTrait configuration = initContext.requiredTrait(ConfigurationTrait.class);
-        String myValue = configuration.get("mykey");
-        
-        // get dependent trait by class
-       LoggingTrait  loogging = initContext.dependentTrait(LoggingTrait.class);
-       logging.verbosity(LoggingTrait.INFO);
+@Override
+public InitState init(InitContext initContext) {
+    // get trait by class
+    LoggingTrait  loogging = initContext.trait(LoggingTrait.class);
+    logging.verbosity(LoggingTrait.INFO);
 
-       // get all required plugins
-       Map<Class<?> , ?> requiredTraits = initContext.requiredTraits();
-       
-       // get all dependent plugins
-       Map<Class<?> , ?> dependentTraits = initContext.dependendTraits();
-    }
+    // get all traits 
+    Map<Class<?> , ?> traits = initContext.traits();
+}
 ----
 
 
