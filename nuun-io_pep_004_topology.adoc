@@ -157,7 +157,11 @@ public interface MyAppTopology
 }
 ----
 
-== Overriding
+== Overriding existing binding
 
 == Tests
+= Internals
+
+This feature will be handle by a plugin that won't be declared inside `META-INF/services` but activated by NuunRunner when launching the kernel.
+
 
