@@ -164,4 +164,7 @@ public interface MyAppTopology
 
 This feature will be handle by a plugin that won't be declared inside `META-INF/services` but activated by NuunRunner when launching the kernel.
 
+== Meta Annotation support
+
+Topology annotation will support annotation on annotation. To create custom annotations.
 
