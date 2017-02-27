@@ -1,0 +1,163 @@
+|=======================
+|PEP       |  004
+|Title     |  Topology Definition
+|Author    |  Epo Jemba  epo.jemba@kametic.com
+|Status    |  draft
+|=======================
+
+
+= Abstract
+
+Enhance the DX (Developer eXperience) of nuun to allow developpers to easily create applications.
+
+- First, provide a simple starter from main to handle/hide kernel mechanisms.
+- Then provide a simple way to define the object graph of the application.
+
+= Motivation =
+
+Nuun has been designed to supply high level API and SPI to stack/libs/frameworks authors.
+
+This PEP is motivated by the fact that the lambda developer can not use nuun directly, as too many concepts have to be known and mastered before the creation of a minimal application?
+
+
+= Specification
+
+== NuunRunner
+
+The `NuunRunner` has to be ran from a simple main of the developper application.
+
+[source,java]
+----
+// ...
+    public static void main(String[] args)
+    {
+       NuunRunner.run(MyEntryPoint.class , args); 
+    }
+// ...
+----
+It takes as first parameter an `EntryPointè class and in second the args from the main.
+
+We're defining the `EntryPoint` in the next section.
+
+== EntryPoint
+
+We introduce the `EntryPoint` annotation which will annotate the application start class.
+
+The application class is just a pojo holder.
+
+[source,java]
+----
+@Entrypoint(packageScan="io.nuun.appli1")
+public class MyEntrypoint implements Runnable
+{
+     // 
+}
+----
+
+The `EntryPoint` annotation has one mandatory value `packageScan`, which indicate the packages in which scanning the classpath.
+
+Basically, the `NuunRunner` could be launch from the `EntryPoint`.
+
+[source,java]
+----
+@EntryPoint(packageScan="io.nuun.appli1")
+public class MyApplication
+{
+    public static void main(String[] args)
+    {
+       NuunRunner.entrypoint(MyApplication.class).execute(args); 
+    }
+}
+----
+
+== Topology
+
+A Topology is a java interface annotated with @Topologywhich will describe the bindings, AOP of your annotation.
+
+Topologies can compare with spring javaconfig, but topologies are interfaces not POJO.
+
+Topologies are declaratives not imperatives, they do not need to be unit tested (who is unit testing its spring java config class anyway ;p )
+
+We follow an easy to read convention to indicate what to bind, on what key with which qualifiers etc etc.
+
+=== Simple example
+
+[source,java]
+----
+// a topology with one binding defined
+@Topology
+public class MyTopology
+{
+    MyServiceImpl binds(MyService key);                                            
+}
+----
+
+In this simple example we define that MyService interface will be bound to MyServiceImpl class as implementation. 
+
+[source,java]
+----
+@EntryPoint(packageScan="io.nuun.appli1")
+public class MyApplication
+{
+    @Inject
+    private MyService myService;
+
+    public void run() {
+        //
+        myService.doStuff();
+    }
+
+    public static void main(String[] args)
+    {
+       NuunRunner.run(MyApplication.class , args); 
+    }
+}
+
+----
+=== Complete example
+
+A more complete example
+
+[source,java]
+----
+@Topology
+public interface MyAppTopology
+{
+    // Constant definition
+    @Server
+    Long port = 8080l;
+    
+    @Server
+    String url = "http://localhost.local";
+
+    // Binding 
+    MyServiceImpl binds(MyService key);
+
+    // Bindings with qualifier
+    HisServiceImpl1 bindsOne(@One HisService key); // One is a qualifier
+    HisServiceImpl3 bindsTwo(@Named("Three") HisService key);
+    // or
+    // another way to declare a qualifier
+    HisServiceImpl2 bindsTwo(Class<Two> qualifier, HisService key);
+    
+    // Direct Binding + Eager
+    @Eager // nuun annotation , non jsr 
+    MyObject binds(MyObject key);
+
+    // Use of JSR330 provider
+    @Singleton // jsr330
+    MyService2Provider provides(MyService2 key);
+
+    // A.O.P.
+    MyMethodInterceptor intercepts(Predicate<Class<?>> pc, Predicate<Method> pm);
+
+   // Custom Annotation to be injected 
+   MyLoggerFieldInjector isInjectedBy(MyLogger annotation); 
+       
+}
+----
+
+== Overriding
+
+== Tests
+
