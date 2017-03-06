@@ -88,7 +88,7 @@ We follow an easy to read convention to indicate what to bind, on what key with 
 @Topology
 public class MyTopology
 {
-    MyServiceImpl binds(MyService key);                                            
+    MyServiceImpl injects(MyService key);
 }
 ----
 
@@ -114,45 +114,50 @@ public class MyApplication
 }
 
 ----
+
 === Complete example
 
-A more complete example
+A more complete example.
+
+Topologies methods follow the rule for their name ::
+
+- injects[a-zA-Z]* : Implementation injects Injection Key. With and Without Qualifier.
+- provides : Provider provides Injection Key
+- intercepts : Interceptor intercepts Class/Method predicate
+- manages : FieldInjector manages Annotation
 
 [source,java]
 ----
 @Topology
 public interface MyAppTopology
 {
-    // Constant definition
+   // Constants
     @Server
     Long port = 8080l;
     
     @Server
     String url = "http://localhost.local";
-
-    // Binding 
-    MyServiceImpl binds(MyService key);
-
-    // Bindings with qualifier
-    HisServiceImpl1 bindsOne(@One HisService key); // One is a qualifier
-    HisServiceImpl3 bindsTwo(@Named("Three") HisService key);
-    // or
-    // another way to declare a qualifier
-    HisServiceImpl2 bindsTwo(Class<Two> qualifier, HisService key);
     
-    // Direct Binding + Eager
-    @Eager // nuun annotation , non jsr 
-    MyObject binds(MyObject key);
+    // Simple injection
+    MyServiceImpl   injects      (MyService key);
+    
+    // Qualified injections
+    HisServiceImpl1 injectsOne   (@One HisService key);    
+    HisServiceImpl2 injectsTwo   (@Two HisService key);    
+   @Singleton     // jsr330
+    HisServiceImpl3 injectsThree (@Three HisService key);
+    
+    // auto injection
+    MyObject injects(MyObject key);
 
-    // Use of JSR330 provider
-    @Singleton // jsr330
+    // jsr330 providers
     MyService2Provider provides(MyService2 key);
 
-    // A.O.P.
+    // AOP via AOP Alliance
     MyMethodInterceptor intercepts(Predicate<Class<?>> pc, Predicate<Method> pm);
-
-   // Custom Annotation to be injected 
-   MyLoggerFieldInjector isInjectedBy(MyLogger annotation); 
+    
+    // 
+    MyLoggerFieldInjector manages(MyLogger annotation);
        
 }
 ----
@@ -162,7 +167,7 @@ public interface MyAppTopology
 == Tests
 = Internals
 
-This feature will be handle by a plugin that won't be declared inside `META-INF/services` but activated by NuunRunner when launching the kernel.
+This feature will be handle by a plugin that will be declared inside `META-INF/services`. 
 
 == Meta Annotation support
 
