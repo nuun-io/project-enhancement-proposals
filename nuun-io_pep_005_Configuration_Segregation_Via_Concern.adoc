@@ -1,0 +1,16 @@
+|=======================
+|PEP       |  005
+|Title     |  
+|Author    |  Adrien Lauer  <adrien.lauer@mpsa.com>
+|Status    |  draft
+|=======================
+
+
+= Abstract
+
+
+= Motivation
+
+
+= Specification
+
